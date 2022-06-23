@@ -104,7 +104,33 @@ def lemmatization(texts):
     return texts_out
 
 
+_id = "CRSG754190" #"CRSG807467" #"CRSG462899"
+example_text =  df_tags[df_tags["SOURCE"] == _id]["SOURCE"].values[0]
+print("SOURCE:",example_text)
+example_text =  df_tags[df_tags["SOURCE"] == _id]["Body"].values[0]
+# example_text =  "dad@d calling all.de@juliusbaer.comlucasr ciao & gmtprioritY"
+# example_text =  df_tags[df_tags["Body"].str.contains(" amp ")]["Body"].values[0]
 
+print("ORIGINAL:",example_text)
+example_text = clean_text(example_text)
+print("\nclean_text:",example_text)
+example_text = clean_punct(example_text)
+print("\nclean_punct:",example_text)
+example_text = remove_punct(example_text)
+print("\nremove_punct:",example_text)
+example_text = remove_numbers(example_text)
+print("\nremove_numbers:",example_text)
+example_text = stopWordsRemove(example_text)
+print("\nstopWordsRemove:",example_text)
+example_text = lemmatization(example_text)
+print("\nlemmatization:",example_text)
+
+
+# example_test
+# with pd.option_context('display.max_colwidth', -1, 'display.max_columns', 10):
+    # display(df_tags)
+    
+    
 # print("Remove HTML tags")
 # df_tags['Body'] = df_tags['Body'].apply(lambda x: BeautifulSoup(x).get_text())
 print("Apply generic text cleaning")
