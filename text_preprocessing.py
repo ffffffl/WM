@@ -102,3 +102,20 @@ def lemmatization(texts):
     texts_out = ' '.join(texts_out)
 
     return texts_out
+
+
+
+# print("Remove HTML tags")
+# df_tags['Body'] = df_tags['Body'].apply(lambda x: BeautifulSoup(x).get_text())
+print("Apply generic text cleaning")
+df_tags['Body'] = df_tags['Body'].apply(lambda x: clean_text(x))
+print("Clean punctuation")
+df_tags['Body'] = df_tags['Body'].apply(lambda x: clean_punct(x)) 
+print("Remove punctuation")
+df_tags['Body'] = df_tags['Body'].apply(lambda x: remove_punct(x)) 
+print("Remove numbers")
+df_tags['Body'] = df_tags['Body'].apply(lambda x: remove_numbers(x)) 
+print("Remove stop words")
+df_tags['Body'] = df_tags['Body'].apply(lambda x: stopWordsRemove(x)) 
+print("Apply lemmatization")
+df_tags['Body'] = df_tags['Body'].apply(lambda x: lemmatization(x))
