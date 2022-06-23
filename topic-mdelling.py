@@ -31,3 +31,16 @@ train_headlines = [value[0] for value in data_text.iloc[0:].values];
 
 #the count vectorizer needs string inputs, not array, so I join them with a space.
 train_headlines_sentences = [' '.join(text) for text in train_headlines]
+
+
+vectorizer = CountVectorizer(analyzer='word', 
+                            # max_features=5000,
+                            max_df = 0.5, min_df = 5, 
+                             max_features = None,
+                            ngram_range=(1,1),
+                            );
+x_counts = vectorizer.fit_transform(train_headlines_sentences);
+
+
+transformer = TfidfTransformer(smooth_idf=False);
+x_tfidf = transformer.fit_transform(x_counts);
