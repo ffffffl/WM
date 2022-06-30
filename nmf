@@ -1,0 +1,128 @@
+### Topic Modeling with LDA and NMF algorithms
+
+# LDA and NMF both used. NMF shows bettter result
+
+# Data imports
+
+We import Pandas, numpy and scipy for data structures. We use gensim for LDA, and sklearn for NMF
+
+import pandas as pd;
+import numpy as np;
+import scipy as sp;
+import sklearn;
+import sys;
+from nltk.corpus import stopwords;
+import nltk;
+# from gensim.models import ldamodel
+# import gensim.corpora;
+from sklearn.feature_extraction.text import CountVectorizer, TfidfTransformer;
+from sklearn.decomposition import NMF;
+from sklearn.preprocessing import normalize;
+import pickle;
+
+# Loading the data
+
+We are using the ABC News headlines dataset. Some lines are badly formatted (very few), so we are skipping those.
+
+# data = pd.read_csv('data/abcnews-date-text.csv', error_bad_lines=False);
+data = pd.read_pickle("CONTACT_REPORT2_REPORT_DETAILS_hk_plus_sg_combined_cleaned2.pickle")
+data.head()
+
+#We only need the Headlines_text column from the data
+data_text = data[['Body']];
+
+We need to remove stopwords first. Casting all values to float will make it easier to iterate over.
+
+data_text = data_text.astype('str');
+
+for idx in range(len(data_text)):
+    
+    #go through each word in each data_text row, remove stopwords, and set them on the index.
+    data_text.iloc[idx]['Body'] = [word for word in data_text.iloc[idx]['Body'].split(' ')]; # if word not in stopwords.words()];
+    
+    #print logs to monitor output
+    if idx % 1000 == 0:
+        sys.stdout.write('\rc = ' + str(idx) + ' / ' + str(len(data_text)));
+
+# #save data because it takes very long to remove stop words
+# pickle.dump(data_text, open('data_text.dat', 'wb'))
+
+#get the words as an array for lda input
+train_headlines = [value[0] for value in data_text.iloc[0:].values];
+
+# train_headlines
+
+#number of topics we will cluster for: 10
+num_topics = 10;
+
+# id2word = gensim.corpora.Dictionary(train_headlines);
+
+# corpus = [id2word.doc2bow(text) for text in train_headlines];
+
+# lda = ldamodel.LdaModel(corpus=corpus, id2word=id2word, num_topics=num_topics);
+
+# def get_lda_topics(model, num_topics):
+#     word_dict = {};
+#     for i in range(num_topics):
+#         words = model.show_topic(i, topn = 20);
+#         word_dict['Topic # ' + '{:02d}'.format(i+1)] = [i[0] for i in words];
+#     return pd.DataFrame(word_dict);
+
+# get_lda_topics(lda, num_topics)
+
+# NMF topic clustering technique
+
+For NMF, we need to obtain a design matrix. To improve results, I am going to apply TfIdf transformation to the counts.
+
+#the count vectorizer needs string inputs, not array, so I join them with a space.
+train_headlines_sentences = [' '.join(text) for text in train_headlines]
+
+Now, we obtain a Counts design matrix, for which we use SKLearn’s CountVectorizer module. The transformation will return a matrix of size (Documents x Features), where the value of a cell is going to be the number of times the feature (word) appears in that document.
+
+To reduce the size of the matrix, to speed up computation, we will set the maximum feature size to 5000, which will take the top 5000 best features that can contribute to our model.
+
+vectorizer = CountVectorizer(analyzer='word', 
+                            # max_features=5000,
+                            max_df = 0.5, min_df = 5, 
+                             max_features = None,
+                            ngram_range=(1,1),
+                            );
+x_counts = vectorizer.fit_transform(train_headlines_sentences);
+
+Next, we set a TfIdf Transformer, and transform the counts with the model.
+
+transformer = TfidfTransformer(smooth_idf=False);
+x_tfidf = transformer.fit_transform(x_counts);
+
+And now we normalize the TfIdf values to unit length for each row.
+
+xtfidf_norm = normalize(x_tfidf, norm='l1', axis=1)
+
+And finally, obtain a NMF model, and fit it with the sentences.
+
+#obtain a NMF model.
+model = NMF(n_components=num_topics, init='nndsvd');
+
+#fit the model
+model.fit(xtfidf_norm)
+
+def get_nmf_topics(model, n_top_words):
+    
+    #the word ids obtained need to be reverse-mapped to the words so we can print the topic names.
+    feat_names = vectorizer.get_feature_names()
+    
+    word_dict = {};
+    for i in range(num_topics):
+        
+        #for each topic, obtain the largest values, and add the words they map to into the dictionary.
+        words_ids = model.components_[i].argsort()[:-20 - 1:-1]
+        words = [feat_names[key] for key in words_ids][:n_top_words]
+        word_dict['Topic # ' + '{:02d}'.format(i+1)] = words;
+    
+    df = pd.DataFrame(word_dict)
+    df.index.rename("Top Words \ Topics", inplace=True)
+    return df
+
+get_nmf_topics(model, 10)
+
+get_nmf_topics(model, 20)
