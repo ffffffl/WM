@@ -1,0 +1,302 @@
+# Inspect unigrams
+
+### Define TFIDF function to extract most relevant words in notes (not really used here)
+
+specific_stop_words = []
+from sklearn.feature_extraction.text import TfidfTransformer #to compute the IDF
+
+
+#Using the TF.IDF technique to extract the keywords from the corpus
+#create a vocabulary of words
+#ignore words that appear in more than 25% of the document
+def TfIdf(corpus, ngram, max_df = 0.5, min_df = 5, max_features = None):
+    cv = CountVectorizer(max_df = max_df, 
+                         min_df = min_df, # 0.01, 
+                         max_features = max_features, 
+                         ngram_range=ngram,
+                         stop_words = specific_stop_words
+                        )
+    word_count_vector = cv.fit_transform(corpus)
+
+    #to see the words in the vocabulary use: list(cv.vocabulary_.keys())[:10]
+    print("words length:",ngram," - vocabulary length:",len(cv.vocabulary_.keys()))
+
+    #calculate the IDF
+    #WARNING: ALWAYS USE IDF ON A LARGE CORPUS
+    tfidf_transformer = TfidfTransformer(smooth_idf=True,use_idf=True)
+    tfidf_transformer.fit(word_count_vector)
+
+    # do this once, this is a mapping of index 
+    feature_names = cv.get_feature_names()
+
+    return cv, word_count_vector, tfidf_transformer, feature_names
+
+
+
+
+### Train model on input data
+
+cv = {}
+word_count_vector = {}
+tfidf_transformer = {}
+feature_names = {}
+cv2 = {}
+word_count_vector2= {}
+tfidf_transformer2 = {}
+feature_names2 = {}
+cv12 = {}
+word_count_vector12 = {}
+tfidf_transformer12 = {}
+feature_names12 = {}
+cv3 = {}
+word_count_vector3 = {}
+tfidf_transformer3 = {}
+feature_names3 = {}
+
+tfidfvectoriser = {}
+tfidf_vectors = {}
+
+# language = "en"
+             
+# df = df.iloc[:2000] # .copy(deep=True)
+# print("Corpus has",len(df)," total documents")
+# df = df.iloc[:2000] # .copy(deep=True)
+print("Corpus has",len(df),"selected documents")
+#creating the corpus for all the articles
+corpus = df["Body"].tolist()
+corpus = [item for item in corpus if isinstance(item, str) ]
+
+df['tags'] = ""
+df['tags2'] = ""
+
+df = df.reset_index()
+df = df.drop('index', axis=1)
+
+# if debug_print:
+    # print("Corpus consists of",len(corpus),"documents like: \"",corpus[0][:200],"\"...")
+
+tfidfvectoriser = TfidfVectorizer()
+tfidfvectoriser.fit(corpus)
+tfidf_vectors = tfidfvectoriser.transform(corpus)
+cv, word_count_vector, tfidf_transformer, feature_names = TfIdf(corpus,(1,1))
+cv2, word_count_vector2, tfidf_transformer2, feature_names2 = TfIdf(corpus,(2,2))
+# cv12, word_count_vector12, tfidf_transformer12, feature_names12 = TfIdf(corpus, (1,2))
+cv3, word_count_vector3, tfidf_transformer3, feature_names3 = TfIdf(corpus,(3,3), max_features=50000)
+
+
+
+
+### Save model files for later re-use
+with open("tfidfvectoriser.pickle", "wb") as outfile:
+    pickle.dump(tfidfvectoriser, outfile)
+with open("tfidf_vectors.pickle", "wb") as outfile:
+    pickle.dump(tfidf_vectors, outfile)
+
+with open("cv.pickle", "wb") as outfile:
+    pickle.dump(cv, outfile)
+with open("tfidf_transformer.pickle", "wb") as outfile:
+    pickle.dump(tfidf_transformer, outfile)
+with open("feature_names.pickle", "wb") as outfile:
+    pickle.dump(feature_names, outfile)
+    
+with open("cv2.pickle", "wb") as outfile:
+    pickle.dump(cv2, outfile)
+with open("tfidf_transformer2.pickle", "wb") as outfile:
+    pickle.dump(tfidf_transformer2, outfile)
+with open("feature_names2.pickle", "wb") as outfile:
+    pickle.dump(feature_names2, outfile)
+
+with open("cv3.pickle", "wb") as outfile:
+    pickle.dump(cv3, outfile)
+with open("tfidf_transformer3.pickle", "wb") as outfile:
+    pickle.dump(tfidf_transformer3, outfile)
+with open("feature_names3.pickle", "wb") as outfile:
+    pickle.dump(feature_names3, outfile)
+
+
+
+
+
+# Inspect unigrams
+print("Number of stop words for unigrams",len(cv.stop_words_))
+print("Example of stop words for unigrams:",sorted(cv.stop_words_)[:10])
+
+sum_words = word_count_vector.sum(axis=0)
+words_freq = [(word, sum_words[0, idx]) for word, idx in cv.vocabulary_.items()]
+words_freq =sorted(words_freq, key = lambda x: x[1], reverse=True)
+
+words_freq[:10]
+
+words_occurences = words_freq[:50]
+
+# Graph showing the words most used in the items on UBS.com
+plt.figure(figsize=(20, 10))
+ax = plt.axes()
+y_axis = [i[1]  for i in words_occurences]
+x_axis = [k for k,i in enumerate(words_occurences)]
+label_x = [i[0] for i in words_occurences]
+plt.xticks(rotation=90, fontsize=15)
+ax = ax.set(xlabel="Word", ylabel="Number of occurences")
+plt.xticks(rotation=85)
+
+plt.bar(label_x, y_axis, color='purple')
+plt.title("Words most used in notes 1-50",fontsize=20)
+plt.show()
+
+
+words_occurences = words_freq[50:100]
+
+# Graph showing the words most used in the items on UBS.com
+plt.figure(figsize=(20, 10))
+ax = plt.axes()
+y_axis = [i[1]  for i in words_occurences]
+x_axis = [k for k,i in enumerate(words_occurences)]
+label_x = [i[0] for i in words_occurences]
+plt.xticks(rotation=90, fontsize=15)
+ax = ax.set(xlabel="Word", ylabel="Number of occurences")
+plt.xticks(rotation=85)
+
+plt.bar(label_x, y_axis, color='purple')
+plt.title("Words most used in notes 51-100",fontsize=20)
+plt.show()
+
+
+words_occurences = words_freq[100:150]
+
+# Graph showing the words most used in the items on UBS.com
+plt.figure(figsize=(20, 10))
+ax = plt.axes()
+y_axis = [i[1]  for i in words_occurences]
+x_axis = [k for k,i in enumerate(words_occurences)]
+label_x = [i[0] for i in words_occurences]
+plt.xticks(rotation=90, fontsize=15)
+ax = ax.set(xlabel="Word", ylabel="Number of occurences")
+plt.xticks(rotation=85)
+
+plt.bar(label_x, y_axis, color='purple')
+plt.title("Words most used in notes 101-150",fontsize=20)
+plt.show()
+
+
+
+
+
+# Inspect bigrams
+print("Number of stop words for unigrams",len(cv2.stop_words_))
+print("Example of stop words for unigrams:",sorted(cv2.stop_words_)[:10])
+
+sum_words2 = word_count_vector2.sum(axis=0)
+words_freq2 = [(word, sum_words2[0, idx]) for word, idx in cv2.vocabulary_.items()]
+words_freq2 =sorted(words_freq2, key = lambda x: x[1], reverse=True)
+
+words_freq2[:10]
+
+words_occurences2 = words_freq2[:50]
+
+# Graph showing the words most used in the items on UBS.com
+plt.figure(figsize=(20, 10))
+ax = plt.axes()
+y_axis = [i[1]  for i in words_occurences2]
+x_axis = [k for k,i in enumerate(words_occurences2)]
+label_x = [i[0] for i in words_occurences2]
+plt.xticks(rotation=90, fontsize=15)
+ax = ax.set(xlabel="Bigrams", ylabel="Number of occurences")
+plt.xticks(rotation=85)
+
+plt.bar(label_x, y_axis, color='purple')
+plt.title("Bigrams most used in notes 1-50",fontsize=20)
+plt.show()
+
+
+words_occurences2 = words_freq2[50:100]
+
+# Graph showing the words most used in the items on UBS.com
+plt.figure(figsize=(20, 10))
+ax = plt.axes()
+y_axis = [i[1]  for i in words_occurences2]
+x_axis = [k for k,i in enumerate(words_occurences2)]
+label_x = [i[0] for i in words_occurences2]
+plt.xticks(rotation=90, fontsize=15)
+ax = ax.set(xlabel="Bigrams", ylabel="Number of occurences")
+plt.xticks(rotation=85)
+
+plt.bar(label_x, y_axis, color='purple')
+plt.title("Bigrams most used in notes 51-100",fontsize=20)
+plt.show()
+
+
+words_occurences2 = words_freq2[100:150]
+
+# Graph showing the words most used in the items on UBS.com
+plt.figure(figsize=(20, 10))
+ax = plt.axes()
+y_axis = [i[1]  for i in words_occurences2]
+x_axis = [k for k,i in enumerate(words_occurences2)]
+label_x = [i[0] for i in words_occurences2]
+plt.xticks(rotation=90, fontsize=15)
+ax = ax.set(xlabel="Bigrams", ylabel="Number of occurences")
+plt.xticks(rotation=85)
+
+plt.bar(label_x, y_axis, color='purple')
+plt.title("Bigrams most used in notes 101-150",fontsize=20)
+plt.show()
+
+# Inspect combined trigrams
+print("Number of stop words for unigrams",len(cv3.stop_words_))
+print("Example of stop words for unigrams:",sorted(cv3.stop_words_)[:10])
+
+sum_words3 = word_count_vector3.sum(axis=0)
+words_freq3 = [(word, sum_words3[0, idx]) for word, idx in cv3.vocabulary_.items()]
+words_freq3 =sorted(words_freq3, key = lambda x: x[1], reverse=True)
+
+words_freq3[:10]
+
+words_occurences3 = words_freq3[:50]
+
+# Graph showing the words most used in the items on UBS.com
+plt.figure(figsize=(20, 10))
+ax = plt.axes()
+y_axis = [i[1]  for i in words_occurences3]
+x_axis = [k for k,i in enumerate(words_occurences3)]
+label_x = [i[0] for i in words_occurences3]
+plt.xticks(rotation=90, fontsize=15)
+ax = ax.set(xlabel="Bigrams", ylabel="Number of occurences")
+plt.xticks(rotation=85)
+
+plt.bar(label_x, y_axis, color='purple')
+plt.title("Trigrams most used in notes 1-50",fontsize=20)
+plt.show()
+
+
+words_occurences3 = words_freq3[50:100]
+
+# Graph showing the words most used in the items on UBS.com
+plt.figure(figsize=(20, 10))
+ax = plt.axes()
+y_axis = [i[1]  for i in words_occurences3]
+x_axis = [k for k,i in enumerate(words_occurences3)]
+label_x = [i[0] for i in words_occurences3]
+plt.xticks(rotation=90, fontsize=15)
+ax = ax.set(xlabel="Bigrams", ylabel="Number of occurences")
+plt.xticks(rotation=85)
+
+plt.bar(label_x, y_axis, color='purple')
+plt.title("Trigrams most used in notes 51-100",fontsize=20)
+plt.show()
+
+
+words_occurences3 = words_freq3[100:150]
+
+# Graph showing the words most used in the items on UBS.com
+plt.figure(figsize=(20, 10))
+ax = plt.axes()
+y_axis = [i[1]  for i in words_occurences3]
+x_axis = [k for k,i in enumerate(words_occurences3)]
+label_x = [i[0] for i in words_occurences3]
+plt.xticks(rotation=90, fontsize=15)
+ax = ax.set(xlabel="Bigrams", ylabel="Number of occurences")
+plt.xticks(rotation=85)
+
+plt.bar(label_x, y_axis, color='purple')
+plt.title("Trigrams most used in notes 101-150",fontsize=20)
+plt.show()
